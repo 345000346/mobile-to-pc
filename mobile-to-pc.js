@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         将手机版网页转换为PC版网页
-// @namespace    http://tampermonkey.net/
-// @version      0.7
+// @namespace    none
+// @version      0.8
 // @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣手机版网页转换为PC版网页
 // @author       owovo
 // @match        *://item.m.jd.com/*
@@ -17,6 +17,8 @@
 // ==/UserScript==
 
 (function() {
+    'use strict';
+
     // URL转换规则配置
     const urlRules = [
         {
@@ -94,17 +96,40 @@
         }
     ];
 
-    const oldURL = window.location.href;
+    // 通用工具函数
+    const utils = {
+        isValidUrl: (url) => {
+            try {
+                new URL(url);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        },
 
-    // 遍历URL转换规则
-    for (const rule of urlRules) {
-        const { regex, replace, description } = rule; // 使用解构赋值
-        let newURL = typeof replace === 'function' ? oldURL.replace(regex, replace) : oldURL.replace(regex, replace);
-
-        // 如果成功转换URL
-        if (newURL && newURL !== oldURL) {
-            window.location.replace(newURL);
-            return; // 提前退出函数
+        safeReplaceUrl: (url, regex, replace) => {
+            try {
+                const newUrl = typeof replace === 'function' 
+                    ? url.replace(regex, replace)
+                    : url.replace(regex, replace);
+                return this.isValidUrl(newUrl) ? newUrl : null;
+            } catch (e) {
+                return null;
+            }
         }
-    }
+    };
+
+    // 主逻辑
+    const currentUrl = window.location.href;
+
+    const matchedRule = urlRules.find(rule => {
+        const { regex, replace } = rule;
+        const newUrl = utils.safeReplaceUrl(currentUrl, regex, replace);
+
+        if (newUrl && newUrl !== currentUrl) {
+            window.location.replace(newUrl);
+            return true;
+        }
+        return false;
+    });
 })();

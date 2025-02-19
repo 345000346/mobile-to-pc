@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         将手机版网页转换为PC版网页
 // @namespace    none
-// @version      0.9
+// @version      1.0
 // @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣手机版网页转换为PC版网页
 // @author       owovo
 // @match        *://item.m.jd.com/*
@@ -96,7 +96,7 @@
         }
     ];
 
-    // 通用工具函数
+    // 工具函数
     const utils = {
         isValidUrl: (url) => {
             try {
@@ -120,16 +120,20 @@
     };
 
     // 主逻辑
-    const currentUrl = window.location.href;
+    try {
+        const currentUrl = window.location.href;
 
-    const matchedRule = urlRules.find(rule => {
-        const { regex, replace } = rule;
-        const newUrl = utils.safeReplaceUrl(currentUrl, regex, replace);
+        const matchedRule = urlRules.find(rule => {
+            const { regex, replace } = rule;
+            const newUrl = utils.safeReplaceUrl(currentUrl, regex, replace);
 
-        if (newUrl && newUrl !== currentUrl) {
-            window.location.replace(newUrl);
-            return true;
-        }
-        return false;
-    });
+            if (newUrl && newUrl !== currentUrl) {
+                window.location.replace(newUrl);
+                return true;
+            }
+            return false;
+        });
+    } catch (e) {
+        console.error('URL conversion failed');
+    }
 })();

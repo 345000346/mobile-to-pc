@@ -112,7 +112,7 @@
                 const newUrl = typeof replace === 'function' 
                     ? url.replace(regex, replace)
                     : url.replace(regex, replace);
-                return this.isValidUrl(newUrl) ? newUrl : null;
+                return utils.isValidUrl(newUrl) ? newUrl : null;
             } catch (e) {
                 return null;
             }

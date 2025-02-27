@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         将手机版网页转换为PC版网页
 // @namespace    none
-// @version      1.0
+// @version      1.1
 // @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣手机版网页转换为PC版网页
 // @author       owovo
 // @match        *://item.m.jd.com/*
@@ -84,9 +84,12 @@
         },
         {
             // 知乎（问题）
-            regex: /^https?:\/\/www\.zhihu\.com\/question\/(\d+)(?:\/.*)?$/,
-            replace: 'https://www.zhihu.com/question/$1',
-            description: "知乎问题转换"
+            regex: /^https?:\/\/www\.zhihu\.com\/question\/(\d+)(\/.*)?$/,
+            replace: (match, questionId, subPath) => {
+                // 保留子路径（如 /answer/123456）
+                return `https://www.zhihu.com/question/${questionId}${subPath || ''}`;
+            },
+            description: "知乎问题转换（保留子路径）"
         },
         {
             // 豆瓣

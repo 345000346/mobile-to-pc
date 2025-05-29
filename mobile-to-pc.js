@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         将手机版网页转换为PC版网页
 // @namespace    none
-// @version      1.1
+// @version      1.2
 // @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣手机版网页转换为PC版网页
 // @author       owovo
 // @match        *://item.m.jd.com/*
@@ -46,29 +46,15 @@
         },
         {
             // 天猫
-            regex: /^https?:\/\/detail\.m\.tmall\.com\/item\.htm\?(.*)$/,
-            replace: (match, params) => {
-                try {
-                    const id = new URLSearchParams(params).get('id');
-                    return id && `https://detail.tmall.com/item.htm?id=${id}`;
-                } catch (error) {
-                    return null;
-                }
-            },
-            description: "天猫商品详情页转换（使用 URLSearchParams 处理参数）"
+            regex: /^https?:\/\/detail\.m\.tmall\.com\/item\.htm\?.*id=(\d+).*$/,
+            replace: (match, id) => `https://detail.tmall.com/item.htm?id=${id}`,
+            description: "天猫商品详情页转换"
         },
         {
             // 淘宝
-            regex: /^https?:\/\/h5\.m\.taobao\.com\/awp\/core\/detail\.htm\?(.*)$/,
-            replace: (match, params) => {
-                try {
-                    const id = new URLSearchParams(params).get('id');
-                    return id && `https://item.taobao.com/item.htm?id=${id}`;
-                } catch (error) {
-                    return null;
-                }
-            },
-            description: "淘宝商品详情页转换（使用 URLSearchParams 处理参数）"
+            regex: /^https?:\/\/h5\.m\.taobao\.com\/awp\/core\/detail\.htm\?.*id=(\d+).*$/,
+            replace: (match, id) => `https://item.taobao.com/item.htm?id=${id}`,
+            description: "淘宝商品详情页转换"
         },
         {
             // 新浪微博

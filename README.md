@@ -27,11 +27,18 @@
 - **淘宝 (Taobao)**
   - 商品详情页
 - **新浪微博 (Weibo)**
-  - 动态和文章页
+  - 状态页（`/status/`、`/detail/`）
+  - 用户页（`/u/`、`/profile/`）
 - **知乎 (Zhihu)**
-  - 问题、回答及文章页 (兼容 `m.zhihu.com` 和 `zhuanlan.zhihu.com` 域名)
+  - 问题、回答及文章页（`m.zhihu.com`）
 - **豆瓣 (Douban)**
-  - 电影、小组、话题等各类页面
+  - 电影详情页
+  - 图书详情页
+  - 音乐详情页
+- **什么值得买 (SMZDM)**
+  - 移动版内容页（`m.smzdm.com`、`post.m.smzdm.com`）
+- **京东推广链接 (re.jd.com)**
+  - 推广中间链接自动转换为商品标准页
 
 ## 安装指南
 

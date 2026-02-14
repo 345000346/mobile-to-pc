@@ -13,8 +13,10 @@
 // @match        *://h5.m.taobao.com/*
 // @match        *://m.weibo.cn/*
 // @match        *://m.zhihu.com/*
-// @match        *://zhuanlan.zhihu.com/*
 // @match        *://m.douban.com/*
+// @match        *://m.smzdm.com/*
+// @match        *://post.m.smzdm.com/*
+// @match        *://re.jd.com/cps/item/*
 // @grant        none
 // @run-at       document-start
 // ==/UserScript==
@@ -55,6 +57,12 @@
             description: "京东店铺首页转换"
         },
         {
+            // 京东推广中间链接
+            regex: /^https?:\/\/re\.jd\.com\/cps\/item\/(\d+)\.html.*$/,
+            replace: 'https://item.jd.com/$1.html',
+            description: "京东推广链接转换"
+        },
+        {
             // 哔哩哔哩 (兼容 m.bilibili.com 和 www.bilibili.com/mobile)
             regex: /^https?:\/\/(?:m|www)\.bilibili\.com\/(?:mobile\/)?video\/(av\d+|BV[a-zA-Z0-9]+).*$/,
             replace: 'https://www.bilibili.com/video/$1/',
@@ -73,10 +81,16 @@
             description: "淘宝商品详情页转换"
         },
         {
-            // 新浪微博
-            regex: /^https?:\/\/m\.weibo\.cn\/(.*)$/,
-            replace: 'https://weibo.com/$1',
-            description: "新浪微博转换"
+            // 新浪微博状态页
+            regex: /^https?:\/\/m\.weibo\.cn\/(?:status|detail)\/([a-zA-Z0-9]+).*$/,
+            replace: 'https://weibo.com/detail/$1',
+            description: "新浪微博状态页转换"
+        },
+        {
+            // 新浪微博用户页
+            regex: /^https?:\/\/m\.weibo\.cn\/(?:u|profile)\/(\d+).*$/,
+            replace: 'https://weibo.com/u/$1',
+            description: "新浪微博用户页转换"
         },
         {
             // 知乎 (通用移动版)
@@ -85,16 +99,28 @@
             description: "知乎问题/回答/文章转换"
         },
         {
-            // 知乎专栏 (zhuanlan.zhihu.com)
-            regex: /^https?:\/\/zhuanlan\.zhihu\.com\/(p\/\w+)/,
-            replace: 'https://zhuanlan.zhihu.com/$1',
-            description: "知乎专栏文章转换"
+            // 豆瓣电影详情页
+            regex: /^https?:\/\/m\.douban\.com\/movie\/subject\/(\d+)\/?(?:\?.*)?$/,
+            replace: 'https://movie.douban.com/subject/$1/',
+            description: "豆瓣电影详情页转换"
         },
         {
-            // 豆瓣
-            regex: /^https?:\/\/m\.douban\.com\/(.*)$/,
-            replace: 'https://www.douban.com/$1',
-            description: "豆瓣转换"
+            // 豆瓣图书详情页
+            regex: /^https?:\/\/m\.douban\.com\/book\/subject\/(\d+)\/?(?:\?.*)?$/,
+            replace: 'https://book.douban.com/subject/$1/',
+            description: "豆瓣图书详情页转换"
+        },
+        {
+            // 豆瓣音乐详情页
+            regex: /^https?:\/\/m\.douban\.com\/music\/subject\/(\d+)\/?(?:\?.*)?$/,
+            replace: 'https://music.douban.com/subject/$1/',
+            description: "豆瓣音乐详情页转换"
+        },
+        {
+            // 什么值得买 (移动版)
+            regex: /^https?:\/\/(post\.)?m\.smzdm\.com\/(.*)$/i,
+            replace: 'https://$1smzdm.com/$2',
+            description: "什么值得买移动版转换"
         }
     ];
 

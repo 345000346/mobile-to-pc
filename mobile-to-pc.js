@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         将手机版网页转换为PC版网页
 // @namespace    none
-// @version      1.3
-// @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣手机版网页转换为PC版网页
+// @version      1.5
+// @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣、什么值得买手机版网页转换为PC版网页
 // @author       owovo
 // @match        *://item.m.jd.com/*
 // @match        *://shop.m.jd.com/*
@@ -24,11 +24,13 @@
 (function() {
     'use strict';
 
+    const mobileUaRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|Opera Mini/i;
+
     /**
      * @description 检测当前环境是否为移动设备。
      * @returns {boolean} 如果是移动设备，返回 true；否则返回 false。
      */
-    const isMobile = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|Opera Mini/i.test(navigator.userAgent);
+    const isMobile = () => mobileUaRegex.test(navigator.userAgent);
 
     // 如果是在移动设备上，则不执行任何操作，以避免在移动端浏览器上发生意外跳转。
     if (isMobile()) {
@@ -44,6 +46,7 @@
      * - {string} description: 规则的中文描述。
      */
     const urlRules = [
+        // 电商
         {
             // 京东商品详情页 (合并了 product, detail, wareId 等多种情况)
             regex: /^https?:\/\/item\.m\.jd\.com\/(?:product|detail|ware\/view\.action).*?(?:\/|wareId=)(\d+).*$/,
@@ -93,10 +96,16 @@
             description: "新浪微博用户页转换"
         },
         {
-            // 知乎 (通用移动版)
-            regex: /^https?:\/\/m\.zhihu\.com\/(question\/\d+(\/answer\/\d+)?|p\/\d+)/,
+            // 知乎问题/回答页
+            regex: /^https?:\/\/m\.zhihu\.com\/(question\/\d+(\/answer\/\d+)?)(?:\/|\?|$).*/,
             replace: 'https://www.zhihu.com/$1',
-            description: "知乎问题/回答/文章转换"
+            description: "知乎问题/回答页转换"
+        },
+        {
+            // 知乎文章页
+            regex: /^https?:\/\/m\.zhihu\.com\/p\/(\d+)(?:\/|\?|$).*/,
+            replace: 'https://zhuanlan.zhihu.com/p/$1',
+            description: "知乎文章页转换"
         },
         {
             // 豆瓣电影详情页
@@ -124,22 +133,33 @@
         }
     ];
 
+    /**
+     * @description 根据规则获取重定向目标地址。
+     * @param {string} currentUrl 当前访问地址。
+     * @returns {string|null} 命中规则返回新地址，否则返回 null。
+     */
+    const getRedirectUrl = (currentUrl) => {
+        for (const rule of urlRules) {
+            const newUrl = currentUrl.replace(rule.regex, rule.replace);
+
+            if (newUrl && newUrl !== currentUrl) {
+                return newUrl;
+            }
+        }
+
+        return null;
+    };
+
     // --- 主逻辑 ---
     // 脚本的核心执行部分。
     try {
         const currentUrl = window.location.href;
 
-        // 遍历所有规则，查找与当前URL匹配的项。
-        for (const rule of urlRules) {
-            if (rule.regex.test(currentUrl)) {
-                const newUrl = currentUrl.replace(rule.regex, rule.replace);
-                
-                // 确保URL有效且发生了变化，然后执行重定向。
-                if (newUrl && newUrl !== currentUrl) {
-                    window.location.replace(newUrl);
-                    break; // 找到匹配并成功替换后，立即停止循环，避免不必要的计算。
-                }
-            }
+        const targetUrl = getRedirectUrl(currentUrl);
+
+        // 确保URL有效且发生了变化，然后执行重定向。
+        if (targetUrl) {
+            window.location.replace(targetUrl);
         }
     } catch (e) {
         console.error('移动版到PC版URL转换脚本失败：', e);

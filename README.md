@@ -30,7 +30,8 @@
   - 状态页（`/status/`、`/detail/`）
   - 用户页（`/u/`、`/profile/`）
 - **知乎 (Zhihu)**
-  - 问题、回答及文章页（`m.zhihu.com`）
+  - 问题、回答页（`m.zhihu.com/question/...`）
+  - 文章页（`m.zhihu.com/p/...` -> `zhuanlan.zhihu.com/p/...`）
 - **豆瓣 (Douban)**
   - 电影详情页
   - 图书详情页
@@ -52,6 +53,24 @@
 ## 使用方法
 
 安装完成后，脚本将自动在后台运行。当您在桌面浏览器上打开任何受支持网站的移动版链接时，它将无缝地将您重定向到PC版页面。
+
+## 手工测试清单
+
+以下链接可用于快速验证脚本行为（建议在桌面浏览器中测试）：
+
+- 应跳转：
+  - `https://item.m.jd.com/product/100016046842.html` -> `https://item.jd.com/100016046842.html`
+  - `https://re.jd.com/cps/item/100012043978.html?cu=true` -> `https://item.jd.com/100012043978.html`
+  - `https://h5.m.taobao.com/awp/core/detail.htm?id=123456` -> `https://item.taobao.com/item.htm?id=123456`
+  - `https://detail.m.tmall.com/item.htm?id=123456` -> `https://detail.tmall.com/item.htm?id=123456`
+  - `https://m.zhihu.com/p/123456789` -> `https://zhuanlan.zhihu.com/p/123456789`
+  - `https://m.douban.com/movie/subject/1292052/` -> `https://movie.douban.com/subject/1292052/`
+  - `https://m.smzdm.com/p/123456/` -> `https://smzdm.com/p/123456/`
+
+- 不应跳转：
+  - `https://m.weibo.cn/`
+  - `https://m.douban.com/`
+  - `https://m.something-example.com/`
 
 ## 如何贡献
 

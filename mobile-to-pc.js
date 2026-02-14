@@ -39,14 +39,15 @@
     }
 
     /**
-     * @description URL转换规则配置数组。
-     * 每个规则对象包含：
-     * - {RegExp} regex: 用于匹配移动版URL的正则表达式。
-     * - {string|Function} replace: 替换的目标PC版URL格式或一个处理函数。
-     * - {string} description: 规则的中文描述。
+     * @description URL转换规则对象结构。
+     * @typedef {Object} UrlRule
+     * @property {RegExp} regex 用于匹配移动版URL的正则表达式。
+     * @property {string|Function} replace 替换目标PC版URL格式或处理函数。
+     * @property {string} description 规则说明。
      */
-    const urlRules = [
-        // 电商
+
+    /** @type {UrlRule[]} */
+    const ecommerceRules = [
         {
             // 京东商品详情页 (合并了 product, detail, wareId 等多种情况)
             regex: /^https?:\/\/item\.m\.jd\.com\/(?:product|detail|ware\/view\.action).*?(?:\/|wareId=)(\d+).*$/,
@@ -66,12 +67,6 @@
             description: "京东推广链接转换"
         },
         {
-            // 哔哩哔哩 (兼容 m.bilibili.com 和 www.bilibili.com/mobile)
-            regex: /^https?:\/\/(?:m|www)\.bilibili\.com\/(?:mobile\/)?video\/(av\d+|BV[a-zA-Z0-9]+).*$/,
-            replace: 'https://www.bilibili.com/video/$1/',
-            description: "哔哩哔哩视频页转换"
-        },
-        {
             // 天猫
             regex: /^https?:\/\/(?:detail|m)\.m\.tmall\.com\/item\.htm\?.*id=(\d+).*$/,
             replace: 'https://detail.tmall.com/item.htm?id=$1',
@@ -83,6 +78,16 @@
             replace: 'https://item.taobao.com/item.htm?id=$1',
             description: "淘宝商品详情页转换"
         },
+        {
+            // 什么值得买 (移动版)
+            regex: /^https?:\/\/(post\.)?m\.smzdm\.com\/(.*)$/i,
+            replace: 'https://$1smzdm.com/$2',
+            description: "什么值得买移动版转换"
+        }
+    ];
+
+    /** @type {UrlRule[]} */
+    const socialRules = [
         {
             // 新浪微博状态页
             regex: /^https?:\/\/m\.weibo\.cn\/(?:status|detail)\/([a-zA-Z0-9]+).*$/,
@@ -106,6 +111,16 @@
             regex: /^https?:\/\/m\.zhihu\.com\/p\/(\d+)(?:\/|\?|$).*/,
             replace: 'https://zhuanlan.zhihu.com/p/$1',
             description: "知乎文章页转换"
+        }
+    ];
+
+    /** @type {UrlRule[]} */
+    const contentRules = [
+        {
+            // 哔哩哔哩 (兼容 m.bilibili.com 和 www.bilibili.com/mobile)
+            regex: /^https?:\/\/(?:m|www)\.bilibili\.com\/(?:mobile\/)?video\/(av\d+|BV[a-zA-Z0-9]+).*$/,
+            replace: 'https://www.bilibili.com/video/$1/',
+            description: "哔哩哔哩视频页转换"
         },
         {
             // 豆瓣电影详情页
@@ -124,13 +139,14 @@
             regex: /^https?:\/\/m\.douban\.com\/music\/subject\/(\d+)\/?(?:\?.*)?$/,
             replace: 'https://music.douban.com/subject/$1/',
             description: "豆瓣音乐详情页转换"
-        },
-        {
-            // 什么值得买 (移动版)
-            regex: /^https?:\/\/(post\.)?m\.smzdm\.com\/(.*)$/i,
-            replace: 'https://$1smzdm.com/$2',
-            description: "什么值得买移动版转换"
         }
+    ];
+
+    /** @type {UrlRule[]} */
+    const urlRules = [
+        ...ecommerceRules,
+        ...socialRules,
+        ...contentRules
     ];
 
     /**

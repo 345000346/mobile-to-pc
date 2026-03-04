@@ -21,7 +21,8 @@
   - 商品详情页
   - 店铺首页
 - **哔哩哔哩 (Bilibili)**
-  - 视频播放页 (兼容 `m.bilibili.com` 和 `www.bilibili.com/mobile` 域名)
+  - 视频播放页 (兼容 `m.bilibili.com` 和 `www.bilibili.com/mobile` 域名，保留 `p`、`t` 参数)
+  - 番剧播放页（`m.bilibili.com/bangumi/play/ep...`、`m.bilibili.com/bangumi/play/ss...`）
 - **天猫 (Tmall)**
   - 商品详情页
 - **淘宝 (Taobao)**
@@ -32,12 +33,14 @@
 - **知乎 (Zhihu)**
   - 问题、回答页（`m.zhihu.com/question/...`）
   - 文章页（`m.zhihu.com/p/...` -> `zhuanlan.zhihu.com/p/...`）
+- **维基百科 (Wikipedia)**
+  - 多语言移动子域页面（`{lang}.m.wikipedia.org/...` -> `{lang}.wikipedia.org/...`）
 - **豆瓣 (Douban)**
   - 电影详情页
   - 图书详情页
   - 音乐详情页
 - **什么值得买 (SMZDM)**
-  - 移动版内容页（`m.smzdm.com`、`post.m.smzdm.com`）
+  - 移动版内容页（仅 `/p/{id}/`，`m.smzdm.com`、`post.m.smzdm.com`）
 - **京东推广链接 (re.jd.com)**
   - 推广中间链接自动转换为商品标准页
 
@@ -63,6 +66,9 @@
   - `https://re.jd.com/cps/item/100012043978.html?cu=true` -> `https://item.jd.com/100012043978.html`
   - `https://h5.m.taobao.com/awp/core/detail.htm?id=123456` -> `https://item.taobao.com/item.htm?id=123456`
   - `https://detail.m.tmall.com/item.htm?id=123456` -> `https://detail.tmall.com/item.htm?id=123456`
+  - `https://m.bilibili.com/video/BV1xx411c7mD?p=2&t=120` -> `https://www.bilibili.com/video/BV1xx411c7mD/?p=2&t=120`
+  - `https://m.bilibili.com/bangumi/play/ep90849` -> `https://www.bilibili.com/bangumi/play/ep90849`
+  - `https://zh.m.wikipedia.org/wiki/JavaScript` -> `https://zh.wikipedia.org/wiki/JavaScript`
   - `https://m.zhihu.com/p/123456789` -> `https://zhuanlan.zhihu.com/p/123456789`
   - `https://m.douban.com/movie/subject/1292052/` -> `https://movie.douban.com/subject/1292052/`
   - `https://m.smzdm.com/p/123456/` -> `https://smzdm.com/p/123456/`
@@ -70,6 +76,7 @@
 - 不应跳转：
   - `https://m.weibo.cn/`
   - `https://m.douban.com/`
+  - `https://m.smzdm.com/`（非内容页）
   - `https://m.something-example.com/`
 
 ## 如何贡献

@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         将手机版网页转换为PC版网页
 // @namespace    none
-// @version      1.5
-// @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣、什么值得买手机版网页转换为PC版网页
+// @version      1.6
+// @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣、什么值得买、维基百科手机版网页转换为PC版网页
 // @author       owovo
 // @match        *://item.m.jd.com/*
 // @match        *://shop.m.jd.com/*
@@ -13,6 +13,7 @@
 // @match        *://h5.m.taobao.com/*
 // @match        *://m.weibo.cn/*
 // @match        *://m.zhihu.com/*
+// @match        *://*.m.wikipedia.org/*
 // @match        *://m.douban.com/*
 // @match        *://m.smzdm.com/*
 // @match        *://post.m.smzdm.com/*
@@ -34,7 +35,6 @@
 
     // 如果是在移动设备上，则不执行任何操作，以避免在移动端浏览器上发生意外跳转。
     if (isMobile()) {
-        console.log("M2PC脚本：检测到移动设备，已跳过重定向。");
         return;
     }
 
@@ -45,6 +45,27 @@
      * @property {string|Function} replace 替换目标PC版URL格式或处理函数。
      * @property {string} description 规则说明。
      */
+
+    /**
+     * @description 仅保留白名单参数并拼接到目标URL。
+     * @param {string} targetUrl 目标URL。
+     * @param {string} sourceUrl 来源URL。
+     * @param {string[]} allowedParams 允许保留的参数列表。
+     * @returns {string} 拼接后的目标URL。
+     */
+    const appendAllowedQueryParams = (targetUrl, sourceUrl, allowedParams) => {
+        const target = new URL(targetUrl);
+        const source = new URL(sourceUrl);
+
+        for (const key of allowedParams) {
+            const value = source.searchParams.get(key);
+            if (value) {
+                target.searchParams.set(key, value);
+            }
+        }
+
+        return target.toString();
+    };
 
     /** @type {UrlRule[]} */
     const ecommerceRules = [
@@ -68,7 +89,7 @@
         },
         {
             // 天猫
-            regex: /^https?:\/\/(?:detail|m)\.m\.tmall\.com\/item\.htm\?.*id=(\d+).*$/,
+            regex: /^https?:\/\/(?:detail\.m\.tmall\.com|m\.tmall\.com)\/item\.htm\?.*id=(\d+).*$/,
             replace: 'https://detail.tmall.com/item.htm?id=$1',
             description: "天猫商品详情页转换"
         },
@@ -79,10 +100,10 @@
             description: "淘宝商品详情页转换"
         },
         {
-            // 什么值得买 (移动版)
-            regex: /^https?:\/\/(post\.)?m\.smzdm\.com\/(.*)$/i,
+            // 什么值得买 (移动版内容页)
+            regex: /^https?:\/\/(post\.)?m\.smzdm\.com\/(p\/\d+\/)(?:\?.*)?$/i,
             replace: 'https://$1smzdm.com/$2',
-            description: "什么值得买移动版转换"
+            description: "什么值得买移动版内容页转换"
         }
     ];
 
@@ -117,10 +138,22 @@
     /** @type {UrlRule[]} */
     const contentRules = [
         {
-            // 哔哩哔哩 (兼容 m.bilibili.com 和 www.bilibili.com/mobile)
+            // 哔哩哔哩视频页 (兼容 m.bilibili.com 和 www.bilibili.com/mobile)
             regex: /^https?:\/\/(?:m|www)\.bilibili\.com\/(?:mobile\/)?video\/(av\d+|BV[a-zA-Z0-9]+).*$/,
-            replace: 'https://www.bilibili.com/video/$1/',
+            replace: (match, id, offset, originalUrl) => appendAllowedQueryParams(`https://www.bilibili.com/video/${id}/`, originalUrl, ['p', 't']),
             description: "哔哩哔哩视频页转换"
+        },
+        {
+            // 哔哩哔哩番剧播放页
+            regex: /^https?:\/\/m\.bilibili\.com\/bangumi\/play\/((?:ep|ss)\d+)(?:\/|\?|$).*/,
+            replace: 'https://www.bilibili.com/bangumi/play/$1',
+            description: "哔哩哔哩番剧播放页转换"
+        },
+        {
+            // 维基百科移动版页面
+            regex: /^https?:\/\/([a-z-]+)\.m\.wikipedia\.org\/(.*)$/i,
+            replace: 'https://$1.wikipedia.org/$2',
+            description: "维基百科移动版页面转换"
         },
         {
             // 豆瓣电影详情页

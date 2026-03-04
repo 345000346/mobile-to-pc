@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         将手机版网页转换为PC版网页
 // @namespace    none
-// @version      1.6
-// @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣、什么值得买、维基百科手机版网页转换为PC版网页
+// @version      1.7
+// @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣、什么值得买、维基百科、Facebook、X/Twitter、Amazon、AliExpress、WikiHow、掘金、CSDN 手机版网页转换为PC版网页
 // @author       owovo
 // @match        *://item.m.jd.com/*
 // @match        *://shop.m.jd.com/*
@@ -18,6 +18,25 @@
 // @match        *://m.smzdm.com/*
 // @match        *://post.m.smzdm.com/*
 // @match        *://re.jd.com/cps/item/*
+// @match        *://m.facebook.com/*
+// @match        *://mobile.twitter.com/*
+// @include      *://*.amazon.*/gp/aw/*
+// @match        *://www.amazon.com/gp/aw/*
+// @match        *://smile.amazon.com/gp/aw/*
+// @match        *://www.amazon.co.uk/gp/aw/*
+// @match        *://smile.amazon.co.uk/gp/aw/*
+// @match        *://www.amazon.de/gp/aw/*
+// @match        *://www.amazon.fr/gp/aw/*
+// @match        *://www.amazon.it/gp/aw/*
+// @match        *://www.amazon.es/gp/aw/*
+// @match        *://www.amazon.co.jp/gp/aw/*
+// @match        *://www.amazon.ca/gp/aw/*
+// @match        *://www.amazon.com.au/gp/aw/*
+// @match        *://www.amazon.in/gp/aw/*
+// @match        *://m.aliexpress.com/*
+// @match        *://m.wikihow.com/*
+// @match        *://m.juejin.cn/*
+// @match        *://m.blog.csdn.net/*
 // @grant        none
 // @run-at       document-start
 // ==/UserScript==
@@ -46,27 +65,6 @@
      * @property {string} description 规则说明。
      */
 
-    /**
-     * @description 仅保留白名单参数并拼接到目标URL。
-     * @param {string} targetUrl 目标URL。
-     * @param {string} sourceUrl 来源URL。
-     * @param {string[]} allowedParams 允许保留的参数列表。
-     * @returns {string} 拼接后的目标URL。
-     */
-    const appendAllowedQueryParams = (targetUrl, sourceUrl, allowedParams) => {
-        const target = new URL(targetUrl);
-        const source = new URL(sourceUrl);
-
-        for (const key of allowedParams) {
-            const value = source.searchParams.get(key);
-            if (value) {
-                target.searchParams.set(key, value);
-            }
-        }
-
-        return target.toString();
-    };
-
     /** @type {UrlRule[]} */
     const ecommerceRules = [
         {
@@ -77,7 +75,7 @@
         },
         {
             // 京东店铺首页
-            regex: /^https?:\/\/shop\.m\.jd\.com\/(?:shop\/home\/(\w+)|index\.action\?shopId=(\d+)).*$/,
+            regex: /^https?:\/\/shop\.m\.jd\.com\/(?:shop\/home\/([\w-]+)|index\.action\?shopId=(\d+)).*$/,
             replace: (match, p1, p2) => `https://shop.jd.com/home/popup/shopHome.html?id=${p1 || p2}`,
             description: "京东店铺首页转换"
         },
@@ -100,6 +98,18 @@
             description: "淘宝商品详情页转换"
         },
         {
+            // Amazon 移动商品页 (gp/aw/d, gp/aw/dp, gp/aw/product)
+            regex: /^https?:\/\/((?:www|smile)\.amazon\.[^/]+)\/(?:-\/[a-zA-Z0-9_-]+\/)?gp\/aw\/(?:d|dp|product)\/([A-Z0-9]{10})(?:[/?].*)?$/i,
+            replace: 'https://$1/dp/$2',
+            description: "Amazon 移动商品页转换"
+        },
+        {
+            // AliExpress
+            regex: /^https?:\/\/m\.aliexpress\.com\/(.*)$/i,
+            replace: 'https://www.aliexpress.com/$1',
+            description: "AliExpress 移动版页面转换"
+        },
+        {
             // 什么值得买 (移动版内容页)
             regex: /^https?:\/\/(post\.)?m\.smzdm\.com\/(p\/\d+\/)(?:\?.*)?$/i,
             replace: 'https://$1smzdm.com/$2',
@@ -109,6 +119,18 @@
 
     /** @type {UrlRule[]} */
     const socialRules = [
+        {
+            // Facebook
+            regex: /^https?:\/\/m\.facebook\.com\/(.*)$/i,
+            replace: 'https://www.facebook.com/$1',
+            description: "Facebook 移动版页面转换"
+        },
+        {
+            // X/Twitter
+            regex: /^https?:\/\/mobile\.twitter\.com\/(.*)$/i,
+            replace: 'https://x.com/$1',
+            description: "X/Twitter 移动版页面转换"
+        },
         {
             // 新浪微博状态页
             regex: /^https?:\/\/m\.weibo\.cn\/(?:status|detail)\/([a-zA-Z0-9]+).*$/,
@@ -139,8 +161,8 @@
     const contentRules = [
         {
             // 哔哩哔哩视频页 (兼容 m.bilibili.com 和 www.bilibili.com/mobile)
-            regex: /^https?:\/\/(?:m|www)\.bilibili\.com\/(?:mobile\/)?video\/(av\d+|BV[a-zA-Z0-9]+).*$/,
-            replace: (match, id, offset, originalUrl) => appendAllowedQueryParams(`https://www.bilibili.com/video/${id}/`, originalUrl, ['p', 't']),
+            regex: /^https?:\/\/(?:m|www)\.bilibili\.com\/(?:mobile\/)?video\/(av\d+|[Bb][Vv][a-zA-Z0-9]+).*$/,
+            replace: 'https://www.bilibili.com/video/$1/',
             description: "哔哩哔哩视频页转换"
         },
         {
@@ -172,6 +194,24 @@
             regex: /^https?:\/\/m\.douban\.com\/music\/subject\/(\d+)\/?(?:\?.*)?$/,
             replace: 'https://music.douban.com/subject/$1/',
             description: "豆瓣音乐详情页转换"
+        },
+        {
+            // WikiHow
+            regex: /^https?:\/\/m\.wikihow\.com\/(.*)$/i,
+            replace: 'https://www.wikihow.com/$1',
+            description: "WikiHow 移动版页面转换"
+        },
+        {
+            // 掘金移动版文章页
+            regex: /^https?:\/\/m\.juejin\.cn\/post\/(\d+)(?:\?.*)?$/i,
+            replace: 'https://juejin.cn/post/$1',
+            description: "掘金移动版文章页转换"
+        },
+        {
+            // CSDN 移动版博客页
+            regex: /^https?:\/\/m\.blog\.csdn\.net\/([^\/]+)\/article\/details\/(\d+)(?:\?.*)?$/i,
+            replace: 'https://blog.csdn.net/$1/article/details/$2',
+            description: "CSDN 移动版博客页转换"
         }
     ];
 
@@ -203,7 +243,6 @@
     // 脚本的核心执行部分。
     try {
         const currentUrl = window.location.href;
-
         const targetUrl = getRedirectUrl(currentUrl);
 
         // 确保URL有效且发生了变化，然后执行重定向。
@@ -214,3 +253,4 @@
         console.error('移动版到PC版URL转换脚本失败：', e);
     }
 })();
+

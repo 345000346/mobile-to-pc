@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         将手机版网页转换为PC版网页
 // @namespace    https://github.com/345000346/mobile-to-pc
-// @version      1.9
+// @version      2.0
 // @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣、贴吧、虎扑、NGA、萌百、什么值得买、维基百科等手机版/中间页自动跳转到PC版
 // @author       owovo
 // @homepageURL  https://github.com/345000346/mobile-to-pc
@@ -68,352 +68,221 @@
 // @updateURL    https://update.greasyfork.org/scripts/389749/mobile-to-pc.meta.js
 // @grant        none
 // @run-at       document-start
+// @noframes
 // ==/UserScript==
 
+/**
+ * 架构：host 表分发 → 站内规则改写 → replace
+ *
+ * - BY_HOST[hostname]：精确 host 的处理函数（主路径）
+ * - wikiMobile：host 本身带变量时的第二分发（维基 *.m.*）
+ * - 组合子：keep / rewrite / first；站内规则不再读 hostname
+ */
 (function () {
     'use strict';
 
-    const REDIRECT_GUARD_KEY = '__m2pc_last_src';
-    const REDIRECT_GUARD_TS_KEY = '__m2pc_last_ts';
-    const REDIRECT_GUARD_MS = 3000;
-
-    const isMobile = () => {
-        try {
-            if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
-                return navigator.userAgentData.mobile;
-            }
-        } catch (_) {
-            /* ignore */
-        }
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(
-            navigator.userAgent
-        );
-    };
-
-    if (isMobile()) {
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(navigator.userAgent)) {
         return;
     }
 
-    /** @typedef {(url: URL) => string|null} RuleFn */
+    /** @typedef {(url: URL) => string|null} Rule */
 
-    /** @param {URL} url @param {string} key @returns {string|null} */
-    const numericQuery = (url, key) => {
+    /** @param {URL} url @param {string} key */
+    const numParam = (url, key) => {
         const v = url.searchParams.get(key);
         return v && /^\d+$/.test(v) ? v : null;
     };
 
-    /**
-     * @param {string} targetHref
-     * @param {URL} source
-     * @param {string[]} keys
-     * @returns {string}
-     */
-    const copyParams = (targetHref, source, keys) => {
-        const target = new URL(targetHref);
-        for (const key of keys) {
-            const v = source.searchParams.get(key);
-            if (v) {
-                target.searchParams.set(key, v);
+    /** @param {string} href @param {URL} src @param {string[]} keys */
+    const withParams = (href, src, keys) => {
+        const u = new URL(href);
+        for (const k of keys) {
+            const v = src.searchParams.get(k);
+            if (v) u.searchParams.set(k, v);
+        }
+        return u.href;
+    };
+
+    /** 换域，保留 path / search / hash */
+    const keep = (origin) => /** @type {Rule} */ (url) =>
+        origin + url.pathname + url.search + url.hash;
+
+    /** pathname 正则命中则 build；已在 host 分发之后，不再检查 host */
+    const rewrite =
+        (pathRe, build) =>
+        /** @type {Rule} */
+        (url) => {
+            const m = url.pathname.match(pathRe);
+            return m ? build(m, url) : null;
+        };
+
+    /** 按序尝试，返回首个非 null */
+    const first =
+        (...rules) =>
+        /** @type {Rule} */
+        (url) => {
+            for (const rule of rules) {
+                const next = rule(url);
+                if (next) return next;
             }
-        }
-        return target.href;
-    };
-
-    /**
-     * 换 host，保留 path/search/hash。
-     * @param {string|(h: string) => boolean} host  精确主机名，或 hostname 谓词
-     * @param {string} origin
-     * @returns {RuleFn}
-     */
-    const rehost = (host, origin) => (url) => {
-        const ok = typeof host === 'function' ? host(url.hostname) : url.hostname === host;
-        return ok ? origin + url.pathname + url.search + url.hash : null;
-    };
-
-    /**
-     * host 谓词 + pathname 正则；build 只拿捕获结果。
-     * @param {string|(h: string) => boolean} host
-     * @param {RegExp} pathRe
-     * @param {(m: RegExpMatchArray) => string} build
-     * @returns {RuleFn}
-     */
-    const whenHostPath = (host, pathRe, build) => (url) => {
-        const hostOk = typeof host === 'function' ? host(url.hostname) : url.hostname === host;
-        if (!hostOk) {
             return null;
-        }
-        const m = url.pathname.match(pathRe);
-        return m ? build(m) : null;
-    };
+        };
 
-    // --- 京东商品 ---
-    const JD_ALT_PRODUCT_ORIGIN = {
-        'mitem.jd.com': 'https://item.jd.com',
-        'wqitem.jd.com': 'https://item.jd.com',
-        'm.yiyaojd.com': 'https://item.jd.com',
-        'm.jd.hk': 'https://item.jd.hk'
-    };
+    // --- 站内规则（无 host 耦合）---
 
-    /** item.m：product|detail|ware/view.action */
-    const jdItemM = (url) => {
-        if (url.hostname !== 'item.m.jd.com') {
-            return null;
-        }
-        const fromPath = url.pathname.match(/^\/(?:product|detail)\/(\d+)(?:\.html)?\/?$/i);
-        if (fromPath) {
-            return `https://item.jd.com/${fromPath[1]}.html`;
-        }
-        if (/\/ware\/view\.action$/i.test(url.pathname)) {
-            const id = numericQuery(url, 'wareId');
+    const jdItemM = first(
+        rewrite(/^\/(?:product|detail)\/(\d+)(?:\.html)?\/?$/i, (m) => `https://item.jd.com/${m[1]}.html`),
+        (url) => {
+            if (!/\/ware\/view\.action$/i.test(url.pathname)) return null;
+            const id = numParam(url, 'wareId');
             return id ? `https://item.jd.com/${id}.html` : null;
+        }
+    );
+
+    const jdAltProduct = (origin) =>
+        rewrite(/^\/product\/(\d+)\.html$/i, (m) => `${origin}/${m[1]}.html`);
+
+    const jdShop = first(
+        rewrite(/^\/shop\/home\/([\w-]+)(?:\.html)?\/?$/i, (m) => `https://mall.jd.com/index-${m[1]}.html`),
+        (url) => {
+            const id = numParam(url, 'shopId') || numParam(url, 'id');
+            return id ? `https://mall.jd.com/index-${id}.html` : null;
+        }
+    );
+
+    const taobaoItem = (pcBase) => (url) => {
+        if (!/\/(?:item\.htm|awp\/core\/detail\.htm|i\d+\.htm)$/i.test(url.pathname)) return null;
+        const id = numParam(url, 'id') ?? url.pathname.match(/\/i(\d+)\.htm$/i)?.[1];
+        if (!id) return null;
+        return withParams(`${pcBase}?id=${id}`, url, ['skuId']);
+    };
+
+    const biliVideo = rewrite(
+        /^\/(?:mobile\/)?video\/(av\d+|[Bb][Vv][a-zA-Z0-9]+)\/?$/i,
+        (m, url) => withParams(`https://www.bilibili.com/video/${m[1]}/`, url, ['p', 't'])
+    );
+
+    const hupu = (url) => {
+        if (url.pathname.startsWith('/bbs/')) {
+            return `https://bbs.hupu.com/${url.pathname.slice(5)}${url.search}${url.hash}`;
+        }
+        if (url.pathname === '/zone' || url.pathname.startsWith('/zone/')) {
+            return `https://bbs.hupu.com${url.pathname}${url.search}${url.hash}`;
         }
         return null;
     };
 
-    /** mitem / wqitem / 医药 / 香港：仅 product/{id}.html */
-    const jdAltProduct = (url) => {
-        const origin = JD_ALT_PRODUCT_ORIGIN[url.hostname];
-        if (!origin) {
-            return null;
-        }
-        const m = url.pathname.match(/^\/product\/(\d+)\.html$/i);
-        return m ? `${origin}/${m[1]}.html` : null;
-    };
+    const amazonAw = rewrite(
+        /(?:^|\/)(?:-\/[a-zA-Z0-9_-]+\/)?gp\/aw\/(?:d|dp|product)\/([A-Z0-9]{10})(?:\/|$)/i,
+        (m, url) => `https://${url.hostname}/dp/${m[1]}`
+    );
 
-    /** 店铺：/shop/home/{id} 或任意带 shopId/id 的 shop.m 链接 → mall.jd.com */
-    const jdShop = (url) => {
-        if (url.hostname !== 'shop.m.jd.com') {
-            return null;
-        }
-        const home = url.pathname.match(/^\/shop\/home\/([\w-]+)(?:\.html)?\/?$/i);
-        if (home) {
-            return `https://mall.jd.com/index-${home[1]}.html`;
-        }
-        const shopId = numericQuery(url, 'shopId') || numericQuery(url, 'id');
-        return shopId ? `https://mall.jd.com/index-${shopId}.html` : null;
-    };
+    const bgmM = (url) =>
+        url.pathname === '/m' || url.pathname.startsWith('/m/') ? 'https://bgm.tv/rakuen' : null;
 
-    /** 淘宝/天猫：query id 或 path i{id}.htm，保留 skuId */
-    const taobaoLikeItem = (hosts, pcBase) => (url) => {
-        if (!hosts.has(url.hostname)) {
-            return null;
-        }
-        let id = numericQuery(url, 'id');
-        if (!id) {
-            const pathId = url.pathname.match(/\/i(\d+)\.htm$/i);
-            id = pathId ? pathId[1] : null;
-        }
-        if (!id) {
-            return null;
-        }
-        const pathOk =
-            /\/item\.htm$/i.test(url.pathname) ||
-            /\/awp\/core\/detail\.htm$/i.test(url.pathname) ||
-            /\/i\d+\.htm$/i.test(url.pathname);
-        if (!pathOk) {
-            return null;
-        }
-        return copyParams(`${pcBase}?id=${id}`, url, ['skuId']);
-    };
+    // --- host → 规则 ---
 
-    const DOUBAN_SUBJECT = {
-        movie: 'https://movie.douban.com',
-        book: 'https://book.douban.com',
-        music: 'https://music.douban.com'
-    };
+    /** @type {Record<string, Rule>} */
+    const BY_HOST = {
+        // 京东
+        'item.m.jd.com': jdItemM,
+        'mitem.jd.com': jdAltProduct('https://item.jd.com'),
+        'wqitem.jd.com': jdAltProduct('https://item.jd.com'),
+        'm.yiyaojd.com': jdAltProduct('https://item.jd.com'),
+        'm.jd.hk': jdAltProduct('https://item.jd.hk'),
+        'shop.m.jd.com': jdShop,
+        're.jd.com': rewrite(/^\/cps\/item\/(\d+)\.html$/i, (m) => `https://item.jd.com/${m[1]}.html`),
 
-    /** @type {RuleFn[]} */
-    const RULES = [
-        // —— 电商 ——
-        jdItemM,
-        jdAltProduct,
-        jdShop,
-        whenHostPath('re.jd.com', /^\/cps\/item\/(\d+)\.html$/i, (m) => `https://item.jd.com/${m[1]}.html`),
-        taobaoLikeItem(new Set(['detail.m.tmall.com', 'm.tmall.com']), 'https://detail.tmall.com/item.htm'),
-        taobaoLikeItem(new Set(['h5.m.taobao.com', 'm.intl.taobao.com']), 'https://item.taobao.com/item.htm'),
-        (url) => {
-            if (!/^(?:www|smile)\.amazon\./i.test(url.hostname)) {
-                return null;
-            }
-            const m = url.pathname.match(
-                /(?:^|\/)(?:-\/[a-zA-Z0-9_-]+\/)?gp\/aw\/(?:d|dp|product)\/([A-Z0-9]{10})(?:\/|$)/i
-            );
-            return m ? `https://${url.hostname}/dp/${m[1]}` : null;
-        },
-        whenHostPath(
-            'm.aliexpress.com',
+        // 淘宝 / 天猫
+        'detail.m.tmall.com': taobaoItem('https://detail.tmall.com/item.htm'),
+        'm.tmall.com': taobaoItem('https://detail.tmall.com/item.htm'),
+        'h5.m.taobao.com': taobaoItem('https://item.taobao.com/item.htm'),
+        'm.intl.taobao.com': taobaoItem('https://item.taobao.com/item.htm'),
+
+        // 社交
+        'm.facebook.com': keep('https://www.facebook.com'),
+        'mobile.twitter.com': keep('https://x.com'),
+        'm.weibo.cn': first(
+            rewrite(/^\/(?:status|detail)\/([a-zA-Z0-9]+)\/?$/i, (m) => `https://weibo.com/detail/${m[1]}`),
+            rewrite(/^\/(?:u|profile)\/(\d+)\/?$/i, (m) => `https://weibo.com/u/${m[1]}`)
+        ),
+        'm.zhihu.com': first(
+            rewrite(/^\/(question\/\d+(?:\/answer\/\d+)?)\/?$/i, (m) => `https://www.zhihu.com/${m[1]}`),
+            rewrite(/^\/p\/(\d+)\/?$/i, (m) => `https://zhuanlan.zhihu.com/p/${m[1]}`)
+        ),
+
+        // 论坛 / 中间页
+        'mzh.moegirl.org.cn': keep('https://zh.moegirl.org.cn'),
+        'mzh.moegirl.org.cn.cc': keep('https://zh.moegirl.org.cn'),
+        'jump2.bdimg.com': rewrite(/^\/p\/(\d+)\/?$/i, (m) => `https://tieba.baidu.com/p/${m[1]}`),
+        'm.hupu.com': hupu,
+        'ngabbs.com': keep('https://bbs.nga.cn'),
+        'nga.178.com': keep('https://bbs.nga.cn'),
+        'yues.org': keep('https://bbs.nga.cn'),
+        'bgm.tv': bgmM,
+        'bangumi.tv': bgmM,
+        'chii.in': bgmM,
+
+        // 内容
+        'm.bilibili.com': first(
+            biliVideo,
+            rewrite(/^\/bangumi\/play\/((?:ep|ss)\d+)\/?$/i, (m) => `https://www.bilibili.com/bangumi/play/${m[1]}`)
+        ),
+        'www.bilibili.com': first(biliVideo, (url) =>
+            url.pathname.startsWith('/s/')
+                ? `https://www.bilibili.com/${url.pathname.slice(3)}${url.search}${url.hash}`
+                : null
+        ),
+        'm.douban.com': rewrite(
+            /^\/(movie|book|music)\/subject\/(\d+)\/?$/i,
+            (m) => `https://${m[1].toLowerCase()}.douban.com/subject/${m[2]}/`
+        ),
+        'm.smzdm.com': rewrite(/^\/(p\/\d+)\/?$/i, (m) => `https://smzdm.com/${m[1]}/`),
+        'post.m.smzdm.com': rewrite(/^\/(p\/\d+)\/?$/i, (m) => `https://post.smzdm.com/${m[1]}/`),
+        'm.aliexpress.com': rewrite(
             /^\/(item\/\d+\.html|store\/\d+)\/?$/i,
             (m) => `https://www.aliexpress.com/${m[1]}`
         ),
-        (url) => {
-            const mHost = url.hostname.match(/^(post\.)?m\.smzdm\.com$/i);
-            if (!mHost) {
-                return null;
-            }
-            const mPath = url.pathname.match(/^\/(p\/\d+)\/?$/i);
-            if (!mPath) {
-                return null;
-            }
-            return `https://${mHost[1] || ''}smzdm.com/${mPath[1]}/`;
-        },
-
-        // —— 社交 ——
-        rehost('m.facebook.com', 'https://www.facebook.com'),
-        rehost('mobile.twitter.com', 'https://x.com'),
-        whenHostPath(
-            'm.weibo.cn',
-            /^\/(?:status|detail)\/([a-zA-Z0-9]+)\/?$/i,
-            (m) => `https://weibo.com/detail/${m[1]}`
-        ),
-        whenHostPath('m.weibo.cn', /^\/(?:u|profile)\/(\d+)\/?$/i, (m) => `https://weibo.com/u/${m[1]}`),
-        whenHostPath(
-            'm.zhihu.com',
-            /^\/(question\/\d+(?:\/answer\/\d+)?)\/?$/i,
-            (m) => `https://www.zhihu.com/${m[1]}`
-        ),
-        whenHostPath('m.zhihu.com', /^\/p\/(\d+)\/?$/i, (m) => `https://zhuanlan.zhihu.com/p/${m[1]}`),
-
-        // —— 论坛 / 中间页（部分整站换域） ——
-        rehost((h) => /^mzh\.moegirl\.org\.cn(?:\.cc)?$/i.test(h), 'https://zh.moegirl.org.cn'),
-        whenHostPath('jump2.bdimg.com', /^\/p\/(\d+)\/?$/i, (m) => `https://tieba.baidu.com/p/${m[1]}`),
-        (url) => {
-            if (url.hostname !== 'm.hupu.com') {
-                return null;
-            }
-            if (url.pathname.startsWith('/bbs/')) {
-                return `https://bbs.hupu.com/${url.pathname.slice(5)}${url.search}${url.hash}`;
-            }
-            if (url.pathname === '/zone' || url.pathname.startsWith('/zone/')) {
-                return `https://bbs.hupu.com${url.pathname}${url.search}${url.hash}`;
-            }
-            return null;
-        },
-        rehost((h) => /^(?:ngabbs\.com|nga\.178\.com|yues\.org)$/i.test(h), 'https://bbs.nga.cn'),
-        (url) => {
-            if (!/^(?:bgm\.tv|bangumi\.tv|chii\.in)$/i.test(url.hostname)) {
-                return null;
-            }
-            if (url.pathname !== '/m' && !url.pathname.startsWith('/m/')) {
-                return null;
-            }
-            // 统一到桌面时间线入口
-            return 'https://bgm.tv/rakuen';
-        },
-
-        // —— 内容 ——
-        (url) => {
-            if (!/^(?:m|www)\.bilibili\.com$/i.test(url.hostname)) {
-                return null;
-            }
-            const m = url.pathname.match(/^\/(?:mobile\/)?video\/(av\d+|[Bb][Vv][a-zA-Z0-9]+)\/?$/i);
-            if (!m) {
-                return null;
-            }
-            return copyParams(`https://www.bilibili.com/video/${m[1]}/`, url, ['p', 't']);
-        },
-        whenHostPath(
-            'm.bilibili.com',
-            /^\/bangumi\/play\/((?:ep|ss)\d+)\/?$/i,
-            (m) => `https://www.bilibili.com/bangumi/play/${m[1]}`
-        ),
-        (url) => {
-            if (url.hostname !== 'www.bilibili.com' || !url.pathname.startsWith('/s/')) {
-                return null;
-            }
-            return `https://www.bilibili.com/${url.pathname.slice(3)}${url.search}${url.hash}`;
-        },
-        (url) => {
-            const m = url.hostname.match(
-                /^([a-z-]+)\.m\.(wikipedia|wiktionary|wikibooks|wikinews|wikisource|wikiversity|wikivoyage|wikiquote)\.org$/i
-            );
-            if (!m) {
-                return null;
-            }
-            return `https://${m[1]}.${m[2]}.org${url.pathname}${url.search}${url.hash}`;
-        },
-        rehost('m.wikidata.org', 'https://www.wikidata.org'),
-        rehost('m.mediawiki.org', 'https://www.mediawiki.org'),
-        (url) => {
-            if (url.hostname !== 'm.douban.com') {
-                return null;
-            }
-            const m = url.pathname.match(/^\/(movie|book|music)\/subject\/(\d+)\/?$/i);
-            if (!m) {
-                return null;
-            }
-            const origin = DOUBAN_SUBJECT[m[1].toLowerCase()];
-            return origin ? `${origin}/subject/${m[2]}/` : null;
-        },
-        rehost('m.wikihow.com', 'https://www.wikihow.com'),
-        whenHostPath('m.juejin.cn', /^\/post\/(\d+)\/?$/i, (m) => `https://juejin.cn/post/${m[1]}`),
-        whenHostPath(
-            'm.blog.csdn.net',
+        'm.wikihow.com': keep('https://www.wikihow.com'),
+        'm.juejin.cn': rewrite(/^\/post\/(\d+)\/?$/i, (m) => `https://juejin.cn/post/${m[1]}`),
+        'm.blog.csdn.net': rewrite(
             /^\/([^/]+)\/article\/details\/(\d+)\/?$/i,
             (m) => `https://blog.csdn.net/${m[1]}/article/details/${m[2]}`
-        )
-    ];
-
-    /** @param {string} href @returns {string|null} */
-    const getRedirectUrl = (href) => {
-        let url;
-        try {
-            url = new URL(href);
-        } catch (_) {
-            return null;
-        }
-
-        for (const to of RULES) {
-            const next = to(url);
-            if (typeof next !== 'string' || !next) {
-                continue;
-            }
-            let abs;
-            try {
-                abs = new URL(next, url);
-            } catch (_) {
-                continue;
-            }
-            if (abs.href !== url.href) {
-                return abs.href;
-            }
-        }
-        return null;
+        ),
+        'm.wikidata.org': keep('https://www.wikidata.org'),
+        'm.mediawiki.org': keep('https://www.mediawiki.org')
     };
 
-    const isRedirectLoop = (currentUrl) => {
-        try {
-            const lastSrc = sessionStorage.getItem(REDIRECT_GUARD_KEY);
-            const lastTs = Number(sessionStorage.getItem(REDIRECT_GUARD_TS_KEY) || 0);
-            if (lastSrc === currentUrl && Date.now() - lastTs < REDIRECT_GUARD_MS) {
-                return true;
-            }
-        } catch (_) {
-            /* ignore */
-        }
-        return false;
+    for (const h of [
+        'www.amazon.com',
+        'smile.amazon.com',
+        'www.amazon.co.uk',
+        'smile.amazon.co.uk',
+        'www.amazon.de',
+        'www.amazon.fr',
+        'www.amazon.it',
+        'www.amazon.es',
+        'www.amazon.co.jp',
+        'www.amazon.ca',
+        'www.amazon.com.au',
+        'www.amazon.in'
+    ]) {
+        BY_HOST[h] = amazonAw;
+    }
+
+    /** host 形态本身可变时走这里（维基语种子域） */
+    const WIKI_HOST =
+        /^([a-z-]+)\.m\.(wikipedia|wiktionary|wikibooks|wikinews|wikisource|wikiversity|wikivoyage|wikiquote)\.org$/i;
+
+    /** @type {Rule} */
+    const wikiMobile = (url) => {
+        const m = url.hostname.match(WIKI_HOST);
+        return m ? `https://${m[1]}.${m[2]}.org${url.pathname}${url.search}${url.hash}` : null;
     };
 
-    const markRedirect = (currentUrl) => {
-        try {
-            sessionStorage.setItem(REDIRECT_GUARD_KEY, currentUrl);
-            sessionStorage.setItem(REDIRECT_GUARD_TS_KEY, String(Date.now()));
-        } catch (_) {
-            /* ignore */
-        }
-    };
-
-    try {
-        const currentUrl = window.location.href;
-        if (isRedirectLoop(currentUrl)) {
-            console.warn('M2PC：检测到可能的重定向循环，已中止。', currentUrl);
-            return;
-        }
-        const target = getRedirectUrl(currentUrl);
-        if (target) {
-            markRedirect(currentUrl);
-            window.location.replace(target);
-        }
-    } catch (e) {
-        console.error('移动版到PC版URL转换脚本失败：', e);
+    const url = new URL(location.href);
+    const next = BY_HOST[url.hostname]?.(url) ?? wikiMobile(url);
+    if (next && next !== url.href) {
+        location.replace(next);
     }
 })();

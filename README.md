@@ -4,16 +4,15 @@
 [![Greasy Fork](https://img.shields.io/badge/Greasy%20Fork-安装-blue)](https://greasyfork.org/zh-CN/scripts/389749)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-这是一个为桌面浏览器设计的用户脚本（User Script），会将多个主流网站的手机版（M站）与常见中间页链接自动重定向到对应的 PC 版页面，减少在桌面端打开移动站的不便。
+桌面浏览器用户脚本：把常见站点的手机版（M 站）与中间页自动 `location.replace` 到对应 PC 版页面。
 
-## 核心功能
+## 行为
 
-- **自动重定向**：命中规则后立即 `location.replace` 跳转，不污染浏览器历史。
-- **移动设备豁免**：优先使用 Client Hints（`userAgentData.mobile`），并回退 UA 检测；在手机/平板上不跳转。
-- **规则策略**：以路径白名单为主（商品、帖子、视频等）；部分站点（NGA、萌百、Facebook 等）做整站换域。
-- **电商参数保留**：淘宝/天猫跳转时保留 `skuId` 等有用参数。
-- **防循环**：同一会话内短时间重复跳转同一源地址时中止，避免错误规则导致死循环。
-- **易于扩展**：规则为 `URL => 新地址 | null` 的函数列表，方便追加。
+- 命中规则后立即跳转，不污染历史记录
+- 通过 UA 识别移动设备，手机/平板上不跳转
+- **按 hostname 分发**：`BY_HOST[host](url)`，站内再用 path 规则改写；维基 `*.m.*` 走独立 fallback
+- 路径白名单为主；少数站点（NGA、萌百、Facebook 等）整站换域
+- 淘宝/天猫保留 `skuId`；B 站视频保留 `p`/`t`
 
 ## 支持的网站
 
@@ -40,42 +39,36 @@
 | 掘金 | 文章页 |
 | CSDN | 博客文章页 |
 
-## 安装指南
+## 安装
 
-### 方式一：Greasy Fork（推荐）
+### Greasy Fork（推荐）
 
-1. 安装 [Tampermonkey](https://www.tampermonkey.net/)（Chrome / Edge / Firefox 等）。
-2. 打开脚本主页并安装：  
-   **[https://greasyfork.org/zh-CN/scripts/389749](https://greasyfork.org/zh-CN/scripts/389749)**
-3. 之后可通过脚本管理器自动检查更新（`@updateURL` 指向 Greasy Fork）。
+1. 安装 [Tampermonkey](https://www.tampermonkey.net/)
+2. 打开 [脚本主页](https://greasyfork.org/zh-CN/scripts/389749) 安装
+3. 之后由管理器按 `@updateURL` 自动更新
 
-### 方式二：从本仓库安装
+### 从本仓库
 
-1. 安装 Tampermonkey。
-2. 打开仓库中的 [`mobile-to-pc.js`](./mobile-to-pc.js)，复制全部内容。
-3. 在 Tampermonkey 中「添加新脚本」，粘贴后保存。
+1. 安装 Tampermonkey
+2. 复制 [`mobile-to-pc.js`](./mobile-to-pc.js) 全文，在管理器中新建脚本并保存
 
-也可使用 raw 链接（需管理器支持从 URL 安装）：
+或使用 raw 链接安装：
 
 ```text
 https://raw.githubusercontent.com/345000346/mobile-to-pc/main/mobile-to-pc.js
 ```
 
-## 使用方法
-
-安装后脚本在后台运行。在桌面浏览器打开受支持站点的移动版链接时，会无缝跳到 PC 版。
-
 ## 规则失效时
 
-请在仓库提交 [Issue](https://github.com/345000346/mobile-to-pc/issues)，尽量包含：
+请开 [Issue](https://github.com/345000346/mobile-to-pc/issues)，尽量包含：
 
 1. 完整的移动版 URL  
 2. 期望的 PC 版 URL  
 3. 浏览器与脚本版本  
 
-也欢迎直接发 Pull Request 修改规则。
+也欢迎直接发 Pull Request。
 
-## 相关链接
+## 链接
 
 - Greasy Fork：https://greasyfork.org/zh-CN/scripts/389749  
 - 许可证：[MIT](./LICENSE)

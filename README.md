@@ -20,14 +20,14 @@
 |------|----------|
 | 京东 | 商品详情（`item.m` / `mitem` / `wqitem` / 医药 / 香港站）、店铺首页、推广中间页 `re.jd.com` |
 | 淘宝 / 天猫 | 商品详情；支持 `h5.m`、`m.intl`；保留 `skuId` |
-| 哔哩哔哩 | 视频（含 `p`/`t`）、番剧 `ep`/`ss`、搜索路径 `/s/` 规范化 |
+| 哔哩哔哩 | 视频（含 `p`/`t`）、番剧 `ep`/`ss` |
 | 新浪微博 | 状态页 `/status` `/detail`、用户页 `/u` `/profile` |
 | 知乎 | 问题/回答、文章（跳转专栏域名） |
 | 豆瓣 | 电影 / 图书 / 音乐 subject 页 |
 | 什么值得买 | 内容页 `/p/{id}/` |
 | 百度贴吧 | `jump2.bdimg.com` 中间页 → 帖子 PC 页 |
 | 虎扑 | `m.hupu.com/bbs`、`/zone` |
-| NGA | 整站换域：`ngabbs.com` / `nga.178.com` / `yues.org` → `bbs.nga.cn` |
+| NGA | 整站换域：`ngabbs.com` / `nga.178.com` → `bbs.nga.cn` |
 | 萌娘百科 | 整站换域：`mzh.moegirl.org.cn` → `zh.moegirl.org.cn` |
 | Bangumi | `/m` 移动入口 → `bgm.tv/rakuen` |
 | 维基百科及姐妹项目 | Wikipedia / Wiktionary / Wikibooks 等 `*.m.*`，以及 Wikidata、MediaWiki.org |

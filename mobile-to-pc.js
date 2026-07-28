@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         将手机版网页转换为PC版网页
 // @namespace    https://github.com/345000346/mobile-to-pc
-// @version      2.0
+// @version      2.1
 // @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣、贴吧、虎扑、NGA、萌百、什么值得买、维基百科等手机版/中间页自动跳转到PC版
 // @author       owovo
 // @homepageURL  https://github.com/345000346/mobile-to-pc
@@ -16,7 +16,6 @@
 // @match        *://m.jd.hk/*
 // @match        *://m.bilibili.com/*
 // @match        *://www.bilibili.com/mobile/video/*
-// @match        *://www.bilibili.com/s/*
 // @match        *://m.tmall.com/*
 // @match        *://detail.m.tmall.com/*
 // @match        *://h5.m.taobao.com/*
@@ -48,14 +47,11 @@
 // @match        *://m.hupu.com/*
 // @match        *://ngabbs.com/*
 // @match        *://nga.178.com/*
-// @match        *://yues.org/*
 // @match        *://bgm.tv/m/*
 // @match        *://bangumi.tv/m/*
 // @match        *://chii.in/m/*
 // @match        *://www.amazon.com/gp/aw/*
-// @match        *://smile.amazon.com/gp/aw/*
 // @match        *://www.amazon.co.uk/gp/aw/*
-// @match        *://smile.amazon.co.uk/gp/aw/*
 // @match        *://www.amazon.de/gp/aw/*
 // @match        *://www.amazon.fr/gp/aw/*
 // @match        *://www.amazon.it/gp/aw/*
@@ -151,7 +147,7 @@
     );
 
     const taobaoItem = (pcBase) => (url) => {
-        if (!/\/(?:item\.htm|awp\/core\/detail\.htm|i\d+\.htm)$/i.test(url.pathname)) return null;
+        if (!/\/(?:item\.htm|awp\/core\/detail\.htm|detail\/detail\.html|i\d+\.htm)$/i.test(url.pathname)) return null;
         const id = numParam(url, 'id') ?? url.pathname.match(/\/i(\d+)\.htm$/i)?.[1];
         if (!id) return null;
         return withParams(`${pcBase}?id=${id}`, url, ['skuId']);
@@ -178,7 +174,7 @@
     );
 
     const bgmM = (url) =>
-        url.pathname === '/m' || url.pathname.startsWith('/m/') ? 'https://bgm.tv/rakuen' : null;
+        url.pathname.startsWith('/m/') ? 'https://bgm.tv/rakuen' : null;
 
     // --- host → 规则 ---
 
@@ -218,7 +214,6 @@
         'm.hupu.com': hupu,
         'ngabbs.com': keep('https://bbs.nga.cn'),
         'nga.178.com': keep('https://bbs.nga.cn'),
-        'yues.org': keep('https://bbs.nga.cn'),
         'bgm.tv': bgmM,
         'bangumi.tv': bgmM,
         'chii.in': bgmM,
@@ -228,11 +223,7 @@
             biliVideo,
             rewrite(/^\/bangumi\/play\/((?:ep|ss)\d+)\/?$/i, (m) => `https://www.bilibili.com/bangumi/play/${m[1]}`)
         ),
-        'www.bilibili.com': first(biliVideo, (url) =>
-            url.pathname.startsWith('/s/')
-                ? `https://www.bilibili.com/${url.pathname.slice(3)}${url.search}${url.hash}`
-                : null
-        ),
+        'www.bilibili.com': biliVideo,
         'm.douban.com': rewrite(
             /^\/(movie|book|music)\/subject\/(\d+)\/?$/i,
             (m) => `https://${m[1].toLowerCase()}.douban.com/subject/${m[2]}/`
@@ -255,9 +246,7 @@
 
     for (const h of [
         'www.amazon.com',
-        'smile.amazon.com',
         'www.amazon.co.uk',
-        'smile.amazon.co.uk',
         'www.amazon.de',
         'www.amazon.fr',
         'www.amazon.it',

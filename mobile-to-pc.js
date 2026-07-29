@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         将手机版网页转换为PC版网页
 // @namespace    https://github.com/345000346/mobile-to-pc
-// @version      2.1
-// @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣、贴吧、虎扑、NGA、萌百、什么值得买、维基百科等手机版/中间页自动跳转到PC版
+// @version      2.2
+// @description  将京东、B站、淘宝、天猫、微博、知乎、豆瓣、贴吧、虎扑、NGA、萌百、什么值得买、维基百科、虎嗅、澎湃、IT之家、头条、搜狐、36氪、网易新闻、腾讯新闻等手机版/中间页自动跳转到PC版
 // @author       owovo
 // @homepageURL  https://github.com/345000346/mobile-to-pc
 // @supportURL   https://github.com/345000346/mobile-to-pc/issues
@@ -60,6 +60,15 @@
 // @match        *://www.amazon.ca/gp/aw/*
 // @match        *://www.amazon.com.au/gp/aw/*
 // @match        *://www.amazon.in/gp/aw/*
+// @match        *://m.huxiu.com/*
+// @match        *://m.thepaper.cn/*
+// @match        *://m.ithome.com/*
+// @match        *://m.toutiao.com/*
+// @match        *://m.sohu.com/*
+// @match        *://m.36kr.com/*
+// @match        *://3g.163.com/dy/article/*
+// @match        *://m.163.com/dy/article/*
+// @match        *://view.inews.qq.com/a/*
 // @downloadURL  https://update.greasyfork.org/scripts/389749/mobile-to-pc.user.js
 // @updateURL    https://update.greasyfork.org/scripts/389749/mobile-to-pc.meta.js
 // @grant        none
@@ -176,6 +185,19 @@
     const bgmM = (url) =>
         url.pathname.startsWith('/m/') ? 'https://bgm.tv/rakuen' : null;
 
+    /** IT之家：/html/{ID}.htm → /0/{前3位}/{剩余}.htm */
+    const ithomeArticle = rewrite(/^\/html\/(\d+)\.htm\/?$/i, (m) => {
+        const id = m[1];
+        if (id.length < 4) return null;
+        return `https://www.ithome.com/0/${id.slice(0, 3)}/${id.slice(3)}.htm`;
+    });
+
+    /** 网易新闻：/dy/article/{ID}.html → www.163.com（3g.163.com 会 301 至 m.163.com） */
+    const neteaseArticle = rewrite(
+        /^\/dy\/article\/([A-Za-z0-9]+)\.html\/?$/i,
+        (m) => `https://www.163.com/dy/article/${m[1]}.html`
+    );
+
     // --- host → 规则 ---
 
     /** @type {Record<string, Rule>} */
@@ -240,6 +262,21 @@
             /^\/([^/]+)\/article\/details\/(\d+)\/?$/i,
             (m) => `https://blog.csdn.net/${m[1]}/article/details/${m[2]}`
         ),
+
+        // 新闻 / 资讯
+        'm.huxiu.com': keep('https://www.huxiu.com'),
+        'm.thepaper.cn': keep('https://www.thepaper.cn'),
+        'm.ithome.com': ithomeArticle,
+        'm.toutiao.com': keep('https://www.toutiao.com'),
+        'm.sohu.com': keep('https://www.sohu.com'),
+        'm.36kr.com': keep('https://www.36kr.com'),
+        '3g.163.com': neteaseArticle,
+        'm.163.com': neteaseArticle,
+        'view.inews.qq.com': rewrite(
+            /^\/a\/(\d{8}[A-Za-z0-9]+)\/?$/i,
+            (m) => `https://news.qq.com/rain/a/${m[1]}`
+        ),
+
         'm.wikidata.org': keep('https://www.wikidata.org'),
         'm.mediawiki.org': keep('https://www.mediawiki.org')
     };

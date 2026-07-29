@@ -31,6 +31,14 @@
 | 萌娘百科 | 整站换域：`mzh.moegirl.org.cn` → `zh.moegirl.org.cn` |
 | Bangumi | `/m` 移动入口 → `bgm.tv/rakuen` |
 | 维基百科及姐妹项目 | Wikipedia / Wiktionary / Wikibooks 等 `*.m.*`，以及 Wikidata、MediaWiki.org |
+| 虎嗅网 | `m.huxiu.com` 整站换域 |
+| 澎湃新闻 | `m.thepaper.cn` 整站换域 |
+| IT之家 | `m.ithome.com/html/{ID}.htm` → PC 文章页（ID 拆分重写） |
+| 今日头条 | `m.toutiao.com` 整站换域 |
+| 搜狐新闻 | `m.sohu.com` 整站换域 |
+| 36氪 | `m.36kr.com` 整站换域 |
+| 网易新闻 | `m.163.com`/`3g.163.com` 的 `/dy/article/{ID}.html` 文章页 |
+| 腾讯新闻 | `view.inews.qq.com/a/{ID}` 中间页 → `news.qq.com/rain/a/{ID}` |
 | Facebook | `m.facebook.com` |
 | X / Twitter | `mobile.twitter.com` → `x.com` |
 | Amazon | 常见站点 `gp/aw` 移动商品页 |

@@ -2,7 +2,33 @@
 
 本项目所有显著变更均记录于此文件。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/)。
 
-## [2.2] - 2026-07-30
+## [2.3] - 2026-11-13
+
+### 修复
+
+- 什么值得买：数字 ID 好价 → `www.smzdm.com`，字母 ID 原创 → `post.smzdm.com`（此前字母 ID 漏跳，停留在 404 手机页）
+- 虎扑：`/zone/{id}` → `bbs.hupu.com/{id}`（此前错误保留 `/zone/`，目标 404）
+- Bangumi：`/m/topic/{group|subject|ep|prsn|crt}/{id}` 按 PC 路径重排；其余 `/m/**` 去前缀映射到同路径 PC 页；仅 `/m`、`/m/` 去 `rakuen`，并补充 `/m` 精确入口的 `@match`
+- 百度贴吧：保留 `pn` / `see_lz` 等查询参数
+- iPadOS 13+ 桌面 UA 通过 `maxTouchPoints` 识别，避免误跳
+
+### 清理
+
+- 删除 20 个已失效/冗余 host 规则：`m.bilibili`、`m.zhihu`、`m.blog.csdn`、`m.wikihow`、`m.facebook`、`m.mediawiki`、`m.wikidata`、`nga.178`、`3g.163`、`mobile.twitter`、`m.toutiao`、`m.yiyaojd`、`post.m.smzdm`、`m.juejin`、`mzh.moegirl.org.cn.cc`、`m.jd.hk`、`mitem`、`wqitem`、`m.36kr`、`re.jd`
+- 删除 8 条维基 `*.m.*` `@match` 与 `wikiMobile` fallback；站点服务器已 301 到 PC
+- 删除随之无用的 `jdAltProduct`
+
+### 新增
+
+- `test/mobile-to-pc.test.js`：URL → 期望 URL 表、`@match`/`BY_HOST` 一致性、版本一致性、UA 边界
+- README 测试小节
+
+### 变更
+
+- README 拆分“脚本规则”和“站点自行跳转/已移除”，删除已失效入口的支持声明
+- `@description` 同步实际支持面
+
+## [2.2] - 2026-07-29
 
 ### 新增
 
@@ -36,7 +62,7 @@
 ### 变更
 
 - 重构为 **host 表分发架构**：`BY_HOST[host](url)` 统一入口，站内规则与 host 解耦
-- 站内规则改为纯函数组合子（`keep` / `rewrite` / `first`），提升可扩展性与可测试性
+- 站内规则改为纯函数组合子（`keep` / `rewrite` / `first`），提升可扩展性
 
 ## [1.9] - 2026-07-15
 
@@ -66,7 +92,7 @@
 
 ### 变更
 
-- 降低误跳率，提升可验证性
+- 降低误跳率
 
 ## [1.5] - 2026-02-14
 
@@ -77,7 +103,9 @@
 
 ### 新增
 
-- 补充手工测试清单
+- 补充手工测试清单（1.8 回滚时删除）
+
+> 注：1.4 未单独发布，版本序列从 1.3 直接进入 1.5。
 
 ## [1.3] - 2025-07-19 → 2026-02-14
 

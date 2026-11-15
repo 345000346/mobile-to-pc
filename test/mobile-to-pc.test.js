@@ -177,6 +177,10 @@ test("unknown Bangumi topic kind is left alone", () => {
     assert.deepEqual(redirectFor("https://bgm.tv/m/topic/blog/1"), []);
 });
 
+test("non-numeric JD shop path is left alone", () => {
+    assert.deepEqual(redirectFor("https://shop.m.jd.com/shop/home/abc123"), []);
+});
+
 test("required scoped @match patterns exist", () => {
     const lines = [...source.matchAll(/^\/\/ @match\s+(.+)$/gm)].map((m) => m[1].trim());
     for (const pattern of [

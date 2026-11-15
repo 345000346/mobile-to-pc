@@ -1,4 +1,23 @@
 # Changelog
+## [2.4] - 2026-11-15
+
+### 变更
+
+- 京东店铺：`shop/home/{id}` 收紧为纯数字 ID（`[\w-]+` → `\d+`），移除只会产出无效 `mall.jd.com/index-{字母}.html` 的字母分支
+- 删除 `biliVideo` 规则中不可达的 `(?:mobile\/)?` 可选前缀（`@match` 仅覆盖 `/mobile/video/*`）
+
+### 文档
+
+- README 补充查询串保留约定（按站点说明保留全部 / 仅关键参数 / 丢弃）
+
+### 清理
+
+- 删除残留 `.gitignore`（仅忽略 `.env`，项目无运行时/环境变量）
+
+### 测试
+
+- 新增“非数字京东店铺路径不跳转”回归测试
+
 
 本项目所有显著变更均记录于此文件。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/)。
 

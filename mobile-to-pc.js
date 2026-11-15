@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         将手机版网页转换为PC版网页
 // @namespace    https://github.com/345000346/mobile-to-pc
-// @version      2.3
+// @version      2.4
 // @description  将京东、B站、淘宝、天猫、微博、豆瓣、贴吧、虎扑、NGA、萌百、什么值得买、Amazon、AliExpress、Bangumi、虎嗅、澎湃、IT之家、搜狐、网易新闻、腾讯新闻等手机版/中间页自动跳转到PC版
 // @author       owovo
 // @homepageURL  https://github.com/345000346/mobile-to-pc
@@ -123,7 +123,7 @@
     );
 
     const jdShop = first(
-        rewrite(/^\/shop\/home\/([\w-]+)(?:\.html)?\/?$/i, (m) => `https://mall.jd.com/index-${m[1]}.html`),
+        rewrite(/^\/shop\/home\/(\d+)(?:\.html)?\/?$/i, (m) => `https://mall.jd.com/index-${m[1]}.html`),
         (url) => {
             const id = numParam(url, 'shopId') || numParam(url, 'id');
             return id ? `https://mall.jd.com/index-${id}.html` : null;
@@ -138,7 +138,7 @@
     };
 
     const biliVideo = rewrite(
-        /^\/(?:mobile\/)?video\/(av\d+|[Bb][Vv][a-zA-Z0-9]+)\/?$/i,
+        /^\/mobile\/video\/(av\d+|[Bb][Vv][a-zA-Z0-9]+)\/?$/i,
         (m, url) => withParams(`https://www.bilibili.com/video/${m[1]}/`, url, ['p', 't'])
     );
 

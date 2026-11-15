@@ -1,4 +1,7 @@
 # Changelog
+
+本项目所有显著变更均记录于此文件。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/)。
+
 ## [2.4] - 2026-11-15
 
 ### 变更
@@ -17,9 +20,6 @@
 ### 测试
 
 - 新增“非数字京东店铺路径不跳转”回归测试
-
-
-本项目所有显著变更均记录于此文件。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/)。
 
 ## [2.3] - 2026-11-13
 

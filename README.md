@@ -3,7 +3,7 @@
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-兼容-green)](https://www.tampermonkey.net/)
 [![Greasy Fork](https://img.shields.io/Greasy%20Fork-安装-blue)](https://greasyfork.org/zh-CN/scripts/389749)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-2.3-blue)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.4-blue)](./CHANGELOG.md)
 
 桌面浏览器用户脚本：把常见站点的手机版（M 站）与中间页自动 `location.replace` 到对应 PC 版页面。
 
@@ -14,6 +14,7 @@
 - **按 hostname 分发**：`BY_HOST[host](url)`，站内再用 path 规则改写
 - 路径规则为主；部分站点整站换域
 - 保留关键参数：淘宝/天猫 `skuId`、B 站 `p`/`t`
+- 查询串保留因站而异：整站换域（萌百、NGA、虎嗅、澎湃、搜狐）与贴吧、虎扑、Bangumi 的 `/m/topic/**`、`/m/**` 保留全部参数；淘宝/天猫与 B 站仅保留关键参数；其余（京东、微博、豆瓣、什么值得买、IT之家、网易、Amazon、AliExpress、腾讯新闻）及 Bangumi 的 `/m` → `rakuen` 入口丢弃查询串
 - IT之家按文章 ID 拆分重写路径（`/html/{ID}.htm` → `/0/{前3位}/{剩余}.htm`）
 - 已由站点服务器 301/302 接管的移动域不再保留规则
 
